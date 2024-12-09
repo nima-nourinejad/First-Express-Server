@@ -5,6 +5,8 @@ const path = require('path');
 const port = process.env.PORT || parseInt(process.argv[2], 10) || 9001;
 
 const app = express();
+app.use(express.json());
+
 
 async function readFile(filePath) {
   try {
@@ -15,6 +17,39 @@ async function readFile(filePath) {
     throw err;
   }
 }
+
+
+async function loadTeam() {
+  try {
+	const data = await readFile('team.json');
+	return JSON.parse(data);
+  } catch (err) {
+	console.error('Error loading team:', err);
+	return [];
+  }
+}
+
+async function writeFile(filePath, data) {
+	  try {
+	await fs.writeFile(filePath, data);
+	  }
+	  catch (err) {
+	console.error(`Error writing to the file at ${filePath}:`, err);
+	  };};
+
+async function saveTeam() {
+  try {
+	await writeFile('team.json', JSON.stringify(team, null, 2));
+  } catch (err) {
+	console.error('Error saving team:', err);
+  }
+}
+
+let team = [];
+loadTeam().then((data) => {
+	team = data;
+});
+
 
 // Using res.writeHeader + res.write + res.end to send
 
@@ -36,6 +71,28 @@ app.get('/api/team', async (req, res) => {
   }
 });
 
+app.get('/api/team/:id', (req, res) => {
+	// res.status(200).send(`<h1>Team Member ${req.params.id} is ${team.filter(member => member.id == req.params.id)[0].name}
+	// 	</h1>`);
+	const member = team.find(member => member.id == parseInt(req.params.id));
+	if (!member) {
+		res.status(404).send(`<h1>Team Member ${req.params.id} not found</h1>`);
+		return;
+	}
+	res.status(200).send(`<h1>Team Member ${req.params.id} is ${member.name}
+		</h1>`);
+});
+
+app.get('/api/team/:id/:name', (req, res) => {
+	res.status(200).send(req.params);
+});
+
+
+//http://localhost:9000/query?sortBy=name
+app.get('/query', (req, res) => {
+	res.status(200).send(req.query);
+});
+
 
 // Using res.sendFile to send a static file
 app.get('/express', (req, res) => {
@@ -52,6 +109,33 @@ app.get('/express', (req, res) => {
 app.get('/nima', (req, res) => {
   res.status(200).send('<h1>Hi Nima</h1>');
 });
+
+
+
+
+
+
+app.post('/api/team', (req, res) => {
+	if (!req.body.name) {
+		return res.status(400).send('<h1>Name is required</h1>');
+	}
+
+	const member = {
+		id: team.length + 1,
+		name: req.body.name
+	};
+
+	team.push(member);
+	saveTeam();
+	res.status(201).send(member);
+});
+
+
+
+
+
+
+
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);

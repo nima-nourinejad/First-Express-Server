@@ -209,6 +209,17 @@ app.put('/api/team/:id', (req, res) => {
 	res.status(200).send(member);
 });
 
+app.delete('/api/team/:id', (req, res) => {
+	const member = team.find(member => member.id == parseInt(req.params.id));
+	if (!member) {
+		return res.status(404).send(`<h1>Team Member ${req.params.id} not found</h1>`);
+	}
+	const index = team.indexOf(member);
+	team.splice(index, 1);
+	saveTeam();
+	res.status(200).send(member);
+});
+
 
 
 

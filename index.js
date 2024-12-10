@@ -1,12 +1,22 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
-
+const validator = require('validator');
+const {body, validationResult } = require('express-validator');
+const Joy = require('joi');
 const port = process.env.PORT || parseInt(process.argv[2], 10) || 9001;
 
 const app = express();
 app.use(express.json());
 
+
+function validateTeamMember(member) {
+	const schema = Joy.object({
+		name: Joy.string().min(3).required(),
+	});
+	return schema.validate(member);
+	// return Joy.validate(member, schema); old version
+}
 
 async function readFile(filePath) {
   try {
@@ -115,10 +125,53 @@ app.get('/nima', (req, res) => {
 
 
 
-app.post('/api/team', (req, res) => {
+app.post('/api/team',
+	[
+		body('name').isAlpha().withMessage('from Express valid. Name must contain only letters'),
+	],
+	 (req, res) => {
+	
 	if (!req.body.name) {
-		return res.status(400).send('<h1>Name is required</h1>');
+		if(req.accepts('html')) {
+			return res.status(400).send('<h1>Name is required</h1>');
+		}
+		else {
+			return res.status(400).send('Name is required');
+		}
+	};
+	if (req.body.name.length < 3) {
+		if (req.accepts('html')) {
+			return res.status(400).send('<h1>Name must be at least 3 characters</h1>');
+		}
+		else {
+			return res.status(400).send('Name must be at least 3 characters');
+		}
+	};
+
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		if (req.accepts('html')) {
+			return res.status(400).send(`<h1>${errors.array()[0].msg}</h1>`);
+		}
+		else {
+			return res.status(400).send(errors.array()[0].msg);
+		}
 	}
+
+
+
+
+
+
+	if(!validator.isAlpha(req.body.name)) {
+		if (req.accepts('html')) {
+			return res.status(400).send('<h1>Name must contain only letters</h1>');
+		}
+		else {
+			return res.status(400).send('Name must contain only letters');
+		}
+	};
+
 
 	const member = {
 		id: team.length + 1,
@@ -128,6 +181,32 @@ app.post('/api/team', (req, res) => {
 	team.push(member);
 	saveTeam();
 	res.status(201).send(member);
+});
+
+
+app.put('/api/team/:id', (req, res) => {
+	const member = team.find(member => member.id == parseInt(req.params.id));
+	if (!member) {
+		res.status(404).send(`<h1>Team Member ${req.params.id} not found</h1>`);
+		return;
+	}
+
+	// const result = validateTeamMember(req.body);
+	// if (result.error) {
+	// 	res.status(400).send(result.error.details[0].message);
+	// 	return;
+	// }
+	//instead of the above 3 lines, we can use the following 2 lines by oject destructuring
+
+
+	const {error} = validateTeamMember(req.body);
+	if (error) {
+		res.status(400).send(error.details[0].message);
+		return;
+	};
+	member.name = req.body.name;
+	saveTeam();
+	res.status(200).send(member);
 });
 
 

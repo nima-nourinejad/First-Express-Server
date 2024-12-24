@@ -10,6 +10,8 @@ const app = express();
 app.use(express.json());
 
 
+
+
 function validateTeamMember(member) {
 	const schema = Joy.object({
 		name: Joy.string().min(3).required(),

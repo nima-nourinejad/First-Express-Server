@@ -20,6 +20,8 @@ function validateTeamMember(member) {
 	// return Joy.validate(member, schema); old version
 }
 
+
+
 async function readFile(filePath) {
   try {
     const data = await fs.readFile(filePath, 'utf8');

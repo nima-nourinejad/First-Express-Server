@@ -19,6 +19,8 @@ function validateTeamMember(member) {
 
 
 
+
+
 async function readFile(filePath) {
   try {
     const data = await fs.readFile(filePath, 'utf8');
